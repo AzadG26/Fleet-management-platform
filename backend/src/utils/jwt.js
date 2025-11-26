@@ -1,20 +1,5 @@
-import jwt from 'jsonwebtoken';
-
-export const generateToken = (user) => {
-  const payload = {
-    id: user.id,
-    email: user.email,
-    role: user.role
-  };
-  return jwt.sign(payload, process.env.JWT_SECRET || 'change_me', {
-    expiresIn: process.env.JWT_EXPIRY || '7d'
-  });
-};
-
-export const verifyToken = (token) => {
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'change_me');
-  } catch (err) {
-    return null;
-  }
-};
+const jwt = require('jsonwebtoken');
+const SECRET = process.env.JWT_SECRET || 'change-this-secret';
+function sign(user) { return jwt.sign({ id: user.id, role: user.role }, SECRET, { expiresIn: '7d' }); }
+function verify(token) { return jwt.verify(token, SECRET); }
+module.exports = { sign, verify };
