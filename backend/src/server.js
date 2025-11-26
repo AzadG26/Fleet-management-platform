@@ -21,47 +21,45 @@ import { startGeofenceMonitoring } from "./cron/geofenceMonitoring.js";
 
 dotenv.config();
 
-// ---------------------------------------------
-// Basic Setup
-// ---------------------------------------------
+// -----------------------------------------------------
+// Setup
+// -----------------------------------------------------
 const app = express();
 const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
-// Railway auto-detect production
-const isProduction = process.env.NODE_ENV === "production";
-
-// Fix ES module dirname
+// ES module path fix
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ---------------------------------------------
+// -----------------------------------------------------
 // Middleware
-// ---------------------------------------------
+// -----------------------------------------------------
 app.use(
   cors({
-    origin: "*", 
-    methods: "GET,POST,PUT,DELETE",
+    origin: "*",
+    methods: "GET, POST, PUT, DELETE",
   })
 );
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ---------------------------------------------
-// Health Check Route (For Railway)
-// ---------------------------------------------
+// -----------------------------------------------------
+// Health Check (Railway uses this)
+// -----------------------------------------------------
 app.get("/health", (req, res) => {
   res.json({
     success: true,
-    message: "Fleet Management API is running",
-    env: process.env.NODE_ENV,
+    message: "Fleet API is running",
+    env: NODE_ENV,
     timestamp: new Date().toISOString(),
   });
 });
 
-// ---------------------------------------------
+// -----------------------------------------------------
 // API Routes
-// ---------------------------------------------
+// -----------------------------------------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/telemetry", telemetryRoutes);
@@ -71,50 +69,42 @@ app.use("/api/geofence", geofenceRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/alerts", alertRoutes);
 
-// ---------------------------------------------
-// Serve Static Frontend (Optional for full-stack)
-// If you later add your frontend build folder inside backend
-// ---------------------------------------------
-const frontendPath = path.join(__dirname, "dist");
-app.use(express.static(frontendPath));
+// -----------------------------------------------------
+// Serve Frontend Build (for Railway full-stack deployment)
+// -----------------------------------------------------
+const frontendPath = path.join(__dirname, "../../frontend/dist");
 
-app.get("*", (req, res) => {
-  const indexFile = path.join(frontendPath, "index.html");
-  if (isProduction && res.sendFile) {
-    return res.sendFile(indexFile);
-  }
-  res.status(404).json({ success: false, message: "Route not found" });
-});
+if (NODE_ENV === "production") {
+  app.use(express.static(frontendPath));
 
-// ---------------------------------------------
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
+
+// -----------------------------------------------------
 // Error Handler
-// ---------------------------------------------
+// -----------------------------------------------------
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
   res.status(500).json({ success: false, message: err.message });
 });
 
-// ---------------------------------------------
+// -----------------------------------------------------
 // Start Server
-// ---------------------------------------------
+// -----------------------------------------------------
 const startServer = async () => {
   try {
-    // DB Check
+    // Prisma DB connectivity check
     await prisma.$queryRaw`SELECT 1`;
     console.log("Database connected");
 
-    // Disable cron jobs on Railway if project sleeps
-    if (process.env.ENABLE_VENDOR_POLLING === "true") {
-      startVendorPolling();
-    }
-    if (process.env.ENABLE_DOCUMENT_ALERTS === "true") {
-      startDocumentAlerts();
-    }
-    if (process.env.ENABLE_GEOFENCE_MONITORING === "true") {
-      startGeofenceMonitoring();
-    }
+    // Cron jobs only if enabled
+    if (process.env.ENABLE_VENDOR_POLLING === "true") startVendorPolling();
+    if (process.env.ENABLE_DOCUMENT_ALERTS === "true") startDocumentAlerts();
+    if (process.env.ENABLE_GEOFENCE_MONITORING === "true") startGeofenceMonitoring();
 
-    app.listen(PORT, () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`API running on port ${PORT}`);
     });
   } catch (err) {
