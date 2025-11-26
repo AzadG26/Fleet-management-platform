@@ -5,10 +5,12 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "dev": "NODE_ENV=development node --watch src/server.js",
+    "build": "echo \"No build step required\"",
+    "postinstall": "prisma generate",
+    "start": "NODE_ENV=production node src/server.js",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev --name init",
+    "db:migrate": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js"
   },
   "dependencies": {
