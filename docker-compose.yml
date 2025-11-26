@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fleet_postgres
+    environment:
+      POSTGRES_USER: fleet_user
+      POSTGRES_PASSWORD: fleet_password_secure
+      POSTGRES_DB: fleet_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fleet_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleet_user -d fleet_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer:latest
+    container_name: fleet_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - fleet_network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  fleet_network:
+    driver: bridge
