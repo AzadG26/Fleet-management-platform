@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api, { setAuthToken } from '../services/api';
+import api, { setAuthToken } from '../api/api';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login(){
