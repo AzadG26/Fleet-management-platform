@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import api from '../services/api';
+import api from '../api/api';
 
 export default function LiveMap(){
   const [vehicles, setVehicles] = useState([]);
