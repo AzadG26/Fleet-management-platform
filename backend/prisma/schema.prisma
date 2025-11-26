@@ -8,367 +8,107 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  firstName   String?
-  lastName    String?
-  role        UserRole  @default(MANAGER)
-  phoneNumber String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  vehicles    Vehicle[]
-  alerts      Alert[]
-
-  @@map("users")
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(MANAGER)
+  name      String?
+  createdAt DateTime @default(now())
+  vehicles  Vehicle[] 
 }
 
-enum UserRole {
+enum Role {
   ADMIN
   MANAGER
-  OWNER
   DRIVER
+  ACCOUNTANT
 }
 
 model Vehicle {
-  id                 String    @id @default(cuid())
-  registrationNumber String    @unique
-  name               String
-  model              String?
-  make               String?
-  year               Int?
-  vin                String?
-  imei               String?   @unique
-  milltrackDeviceId  String?
-  fuelTankCapacity   Float     @default(200)
-  maxSpeed           Float     @default(100)
-
-  currentLatitude    Float?
-  currentLongitude   Float?
-  currentSpeed       Float     @default(0)
-  ignitionOn         Boolean   @default(false)
-  moving             Boolean   @default(false)
-  lastSeenAt         DateTime?
-  online             Boolean   @default(false)
-
-  totalDistance      Float     @default(0)
-  todayDistance      Float     @default(0)
-
-  driverCategory     DriverCategory @default(BLUE)
-  totalHarshBrakes   Int       @default(0)
-  totalHarshAccelerations Int  @default(0)
-  overspeedingCount  Int       @default(0)
-
-  status             VehicleStatus @default(IDLE)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  userId             String
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  telemetry          Telemetry[]
-  fuelLogs           FuelLog[]
-  tyres              Tyre[]
-  documents          VehicleDocument[]
-  geofenceVehicles   GeofenceVehicle[]
-  trips              Trip[]
-  alerts             Alert[]
-
-  @@index([userId])
-  @@map("vehicles")
-}
-
-enum DriverCategory {
-  GREEN
-  BLUE
-  RED
-}
-
-enum VehicleStatus {
-  IDLE
-  MOVING
-  STOPPED
-  OFFLINE
-  IDLING_ENGINE_ON
-  STOPPED_ENGINE_OFF
+  id           String      @id @default(uuid())
+  name         String
+  imei         String      @unique
+  plateNumber  String?
+  vendor       String?
+  createdAt    DateTime    @default(now())
+  telemetries  Telemetry[]
+  tyres        Tyre[]
+  documents    VehicleDocuments?
+  ownerId      String
+  owner        User        @relation(fields: [ownerId], references: [id])
 }
 
 model Telemetry {
-  id             String   @id @default(cuid())
-  vehicleId      String
-  latitude       Float
-  longitude      Float
-  altitude       Float?
-  accuracy       Float?
-  speed          Float    @default(0)
-  course         Float?
-  ignition       Boolean  @default(false)
-  motion         Boolean  @default(false)
-  distanceTraveled Float  @default(0)
-  totalDistance  Float    @default(0)
-  todayDistance  Float    @default(0)
-  charge         Boolean?
-  powerStatus    String?
-  rawVendorData  Json?
-  vendorType     String   @default("millitrack")
-  deviceTime     DateTime
-  serverTime     DateTime
-  fixTime        DateTime?
-  recordedAt     DateTime @default(now())
-
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId])
-  @@index([recordedAt])
-  @@map("telemetry")
+  id            String   @id @default(uuid())
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
+  rawPayload    Json
+  lat           Float
+  lon           Float
+  speed         Float
+  ignition      Boolean
+  motion        Boolean
+  totalDistance Float
+  todayDistance Float
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
 }
 
 model FuelLog {
-  id              String   @id @default(cuid())
-  vehicleId       String
-  fuelLitresAdded Float
-  fuelCost        Float?
-  location        String?
-  odometer        Float
-  kmpl            Float?
-  distanceSinceLast Float?
-  isSuspicious    Boolean  @default(false)
-  suspicionReason String?
-  createdAt       DateTime @default(now())
-  recordedAt      DateTime @default(now())
-
-  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId])
-  @@map("fuel_logs")
+  id          String   @id @default(uuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  liters      Float
+  odometer    Float
+  source      String
+  createdAt   DateTime @default(now())
 }
 
 model Tyre {
-  id              String   @id @default(cuid())
-  vehicleId       String
-  tyreUid         String   @unique
-  make            String?
-  model           String?
-  size            String?
-  installDate     DateTime
-  installOdometer Float
-  removeDate      DateTime?
-  removeOdometer  Float?
-  isActive        Boolean  @default(true)
-  condition       TyreCondition @default(GOOD)
-  swappedWith     String?
-  lastSwapDate    DateTime?
-  suspiciousActivity Boolean @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  history         TyreHistory[]
-
-  @@index([vehicleId])
-  @@map("tyres")
-}
-
-enum TyreCondition {
-  EXCELLENT
-  GOOD
-  FAIR
-  POOR
-  NEEDS_REPLACEMENT
+  id          String   @id @default(uuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  serial      String
+  position    String
+  installedAt DateTime
+  removedAt   DateTime?
+  createdAt   DateTime @default(now())
+  history     TyreHistory[]
 }
 
 model TyreHistory {
-  id           String   @id @default(cuid())
-  tyreId       String
-  eventType    TyreEventType
-  description  String?
-  odometer     Float?
-  notes        String?
-  createdAt    DateTime @default(now())
-
-  tyre         Tyre     @relation(fields: [tyreId], references: [id], onDelete: Cascade)
-
-  @@index([tyreId])
-  @@map("tyre_history")
-}
-
-enum TyreEventType {
-  INSTALLATION
-  REMOVAL
-  SWAP
-  REPAIR
-  ROTATION
-  CONDITION_CHANGE
-  SUSPICIOUS_ACTIVITY
-}
-
-model VehicleDocument {
-  id              String   @id @default(cuid())
-  vehicleId       String
-  documentType    DocumentType
-  issueDate       DateTime
-  expiryDate      DateTime
-  renewalDate     DateTime?
-  documentNumber  String
-  issuedBy        String?
-  issuerDetails   Json?
-  isExpired       Boolean  @default(false)
-  issuedAlert     Boolean  @default(false)
-  alertedAt       DateTime?
-  fileUrl         String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId])
-  @@map("vehicle_documents")
-}
-
-enum DocumentType {
-  RC
-  INSURANCE
-  PUC
-  FITNESS
-  PERMIT
-  TAX
+  id        String   @id @default(uuid())
+  tyreId    String
+  tyre      Tyre     @relation(fields: [tyreId], references: [id])
+  action    String
+  notes     String?
+  createdAt DateTime @default(now())
 }
 
 model Geofence {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  latitude        Float
-  longitude       Float
-  radius          Float
-  geofenceType    GeofenceType @default(INCLUSION)
-  isActive        Boolean  @default(true)
-  requiredStartTime String?
-  requiredEndTime   String?
-  applicableDays    Json?
-  notifyDriver    Boolean  @default(true)
-  notifyOwner     Boolean  @default(true)
-  notifyManager   Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  vehicles        GeofenceVehicle[]
-  alerts          GeofenceAlert[]
-
-  @@map("geofences")
-}
-
-enum GeofenceType {
-  INCLUSION
-  EXCLUSION
-  REVERSE
-}
-
-model GeofenceVehicle {
-  id         String  @id @default(cuid())
-  geofenceId String
-  vehicleId  String
-  isActive   Boolean @default(true)
+  id         String   @id @default(uuid())
+  name       String
+  polygon    Json
   createdAt  DateTime @default(now())
-
-  geofence   Geofence @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
-  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@unique([geofenceId, vehicleId])
-  @@map("geofence_vehicles")
 }
 
 model GeofenceAlert {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   geofenceId String
   vehicleId  String
-  alertType  GeofenceAlertType
-  latitude   Float
-  longitude  Float
-  description String?
-  isResolved Boolean   @default(false)
-  resolvedAt DateTime?
-  createdAt  DateTime  @default(now())
-
-  geofence   Geofence @relation(fields: [geofenceId], references: [id], onDelete: Cascade)
-
-  @@map("geofence_alerts")
+  type       String
+  message    String
+  createdAt  DateTime @default(now())
 }
 
-enum GeofenceAlertType {
-  ENTRY
-  EXIT
-  REVERSE_BREACH
-  OVERSTAY
-  UNAUTHORIZED_ENTRY
-}
-
-model Trip {
-  id              String   @id @default(cuid())
-  vehicleId       String
-  tripName        String?
-  startLatitude   Float
-  startLongitude  Float
-  endLatitude     Float?
-  endLongitude    Float?
-  startTime       DateTime
-  endTime         DateTime?
-  durationMinutes Float?
-  distanceKm      Float     @default(0)
-  isComplete      Boolean   @default(false)
-  maxSpeed        Float?
-  avgSpeed        Float?
-  harshBrakes     Int       @default(0)
-  harshAccelerations Int    @default(0)
-  createdAt       DateTime  @default(now())
-
-  vehicle         Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([vehicleId])
-  @@map("trips")
-}
-
-model Alert {
-  id             String   @id @default(cuid())
-  userId         String
-  vehicleId      String
-  alertType      AlertType
-  severity       AlertSeverity
-  title          String
-  message        String
-  details        Json?
-  isRead         Boolean  @default(false)
-  isAcknowledged Boolean  @default(false)
-  acknowledgedAt DateTime?
-  triggerData    Json?
-  createdAt      DateTime @default(now())
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("alerts")
-}
-
-enum AlertType {
-  FUEL_THEFT
-  TYRE_THEFT
-  DOCUMENT_EXPIRY
-  GEOFENCE_BREACH
-  OVERSPEEDING
-  HARSH_BRAKING
-  HARSH_ACCELERATION
-  VEHICLE_OFFLINE
-  VEHICLE_IDLE
-  ENGINE_RUNNING_IDLE
-  REVERSE_GEOFENCE_BREACH
-  SUSPICIOUS_FUEL_CONSUMPTION
-}
-
-enum AlertSeverity {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+model VehicleDocuments {
+  id          String   @id @default(uuid())
+  vehicleId   String   @unique
+  rcExpires   DateTime?
+  insuranceExpires DateTime?
+  pucExpires  DateTime?
+  fitnessExpires DateTime?
+  permitExpires DateTime?
+  taxExpires  DateTime?
+  createdAt   DateTime @default(now())
 }
