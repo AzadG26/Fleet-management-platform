@@ -1,27 +1,26 @@
 {
-  "name": "fleet-management-backend",
+  "name": "fleet-backend",
   "version": "1.0.0",
-  "description": "Fleet Management & Telematics Integration Platform - Backend",
   "main": "src/server.js",
-  "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "NODE_ENV=development nodemon src/server.js",
     "start": "node src/server.js",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev --name init",
-    "db:seed": "node prisma/seed.js"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "@prisma/client": "^5.8.0",
-    "axios": "^1.6.7",
-    "bcryptjs": "^2.4.3",
+    "axios": "^1.5.0",
+    "bcrypt": "^5.1.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "node-cron": "^3.0.2"
+    "jsonwebtoken": "^9.0.0",
+    "prisma": "^5.5.0",
+    "@prisma/client": "^5.5.0",
+    "node-cron": "^3.0.2",
+    "dayjs": "^1.11.9"
   },
   "devDependencies": {
-    "prisma": "^5.8.0"
+    "nodemon": "^3.0.1"
   }
 }
